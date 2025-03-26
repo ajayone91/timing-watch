@@ -102,6 +102,57 @@
             from { transform: translateY(-10px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        .weather-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .current-weather {
+            margin-bottom: 20px;
+        }
+
+        .forecast-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .forecast-day {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .forecast-date {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .forecast-temp {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            margin: 5px 0;
+        }
+
+        .forecast-description {
+            font-size: 12px;
+            color: #e0e0e0;
+        }
+
+        .weather-icon img {
+            width: 40px;
+            height: 40px;
+        }
     </style>
 </head>
 <body>
@@ -110,6 +161,21 @@
     <div class="clock-container">
         <div class="time" id="time">00:00:00</div>
         <div class="date" id="date">Monday, January 1, 2024</div>
+        <div class="weather-container">
+            <div class="current-weather">
+                <div class="weather-info">
+                    <div class="temperature" id="temperature">--°C</div>
+                    <div class="weather-description" id="weather-description">Loading...</div>
+                    <div class="weather-details">
+                        <span id="humidity">Humidity: --%</span>
+                        <span id="wind">Wind: -- km/h</span>
+                    </div>
+                </div>
+            </div>
+            <div class="forecast-container" id="forecast-container">
+                <!-- Forecast data will be inserted here -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -185,6 +251,86 @@
         setInterval(createSnowflake, 100);
         updateClock();
         setInterval(updateClock, 1000);
+
+        const apiKey = "54e50f85d9a1e6b4c3d0cbf30e26735d";
+        const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+        const forecastUrl = "https://api.openweathermap.org/data/2.5/forecast?units=metric&q=";
+        const CITY = 'Mumbai'; // Change to your city
+
+        // Get current weather
+        async function getWeather() {
+            try {
+                const response = await fetch(apiUrl + CITY + `&appid=${apiKey}`);
+                const data = await response.json();
+
+                document.getElementById('temperature').textContent = 
+                    `${Math.round(data.main.temp)}°C`;
+                document.getElementById('weather-description').textContent = 
+                    data.weather[0].description;
+                document.getElementById('humidity').textContent = 
+                    `Humidity: ${data.main.humidity}%`;
+                document.getElementById('wind').textContent = 
+                    `Wind: ${Math.round(data.wind.speed * 3.6)} km/h`;
+
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+                document.getElementById('weather-description').textContent = 
+                    'Weather data unavailable';
+            }
+        }
+
+        // Get 5-day forecast
+        async function getForecast() {
+            try {
+                const response = await fetch(forecastUrl + CITY + `&appid=${apiKey}`);
+                const data = await response.json();
+
+                // Clear previous forecast
+                const forecastContainer = document.getElementById('forecast-container');
+                forecastContainer.innerHTML = '';
+
+                // Get one forecast per day (every 8th item in the list)
+                const dailyForecasts = data.list.filter((item, index) => index % 8 === 0);
+
+                // Create forecast elements
+                dailyForecasts.forEach(forecast => {
+                    const date = new Date(forecast.dt * 1000);
+                    const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const month = date.toLocaleDateString('en-US', { month: 'short' });
+                    const dayNum = date.getDate();
+
+                    const forecastEl = document.createElement('div');
+                    forecastEl.className = 'forecast-day';
+                    forecastEl.innerHTML = `
+                        <div class="forecast-date">${day}, ${month} ${dayNum}</div>
+                        <div class="weather-icon">
+                            <img src="https://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png" 
+                                 alt="weather icon">
+                        </div>
+                        <div class="forecast-temp">${Math.round(forecast.main.temp)}°C</div>
+                        <div class="forecast-description">${forecast.weather[0].description}</div>
+                        <div class="forecast-description">
+                            H: ${Math.round(forecast.main.temp_max)}°C
+                            L: ${Math.round(forecast.main.temp_min)}°C
+                        </div>
+                    `;
+                    forecastContainer.appendChild(forecastEl);
+                });
+
+            } catch (error) {
+                console.error('Error fetching forecast:', error);
+            }
+        }
+
+        // Initialize weather and forecast
+        getWeather();
+        getForecast();
+
+        // Update weather every 30 minutes
+        setInterval(() => {
+            getWeather();
+            getForecast();
+        }, 30 * 60 * 1000);
     </script>
 </body>
 </html>
