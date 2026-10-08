@@ -93,8 +93,7 @@ This project is open source and available under the MIT License.
 ## Contact 📧
 - GitHub: [@ajayone91](https://github.com/ajayone91)
 
-## Screenshots 📸
-[Add your application screenshots here]
+
 
 ---
 Made with ❤️ by Ajay
